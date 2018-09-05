@@ -20,12 +20,11 @@ char input2 = NULL;
 int intensity;
 
 enum Direction { down, right, up, left };
-//struct coord { int x; int y; };
-
 enum Content {
     blank = 0,
     spiral = 1,
-    spiral2 = 2
+    spiral2 = 2,
+    ring = 3,
 };
 int * board = NULL;
 
@@ -35,7 +34,20 @@ int spiralY;
 bool flipSpiral = false;
 Direction spiralDir;
 
-int backgroundColor = 0;
+struct Ring { int x; int y; int dist; bool activated; };
+const int ringWidth = 3;
+const int ringHeight = 2;
+const int ringCount = 6;
+struct Ring rings[ringCount];
+int ringCounter = 0;
+const int ringSlowdown = 10;
+const int ringSpacing = 6;
+int nextRingCounter = 0;
+int lastRingAdded = -1;
+
+int backgroundColor = 1;
+int colorCounter = 0;
+const int colorSlowdown = 20;
 
 /// TRIP
 
@@ -53,7 +65,14 @@ char charForContent(int content) {
             return '@';
         }
             
-        case blank:
+        case ring: {
+//            return '0';
+        }
+            
+        case blank: {
+//            return '0' + backgroundColor;
+        }
+            
         default: {
             return ' ';
         }
@@ -68,6 +87,39 @@ bool charCollides(int x, int y, char colChar) {
     move(y, x);
     char cAtPos = inch() & A_CHARTEXT;
     return cAtPos == colChar;
+}
+
+bool inRing(Ring * r, int x, int y) {
+    int ringLeftXMax = r->x - r->dist;
+    int ringLeftXMin = ringLeftXMax - ringWidth;
+    int ringRightXMin = r->x + r->dist;
+    int ringRightXMax = ringRightXMin + ringWidth;
+    
+    bool inXStrict = (x > ringLeftXMin && x < ringLeftXMax) || (x > ringRightXMin && x < ringRightXMax);
+    bool inXLoose = (x > ringLeftXMin && x < ringRightXMax);
+    
+    int ringTopYMax = r->y - r->dist;
+    int ringTopYMin = ringTopYMax - ringHeight;
+    int ringBottomYMin = r->y + r->dist;
+    int ringBottomYMax = ringBottomYMin + ringHeight;
+
+    bool inYStrict = (y > ringTopYMin && y < ringTopYMax) || (y > ringBottomYMin && y < ringBottomYMax);
+    bool inYLoose = (y > ringTopYMin && y < ringBottomYMax);
+    
+    return (inXLoose && inYStrict) || (inXStrict && inYLoose);
+}
+
+void addRing() {
+    lastRingAdded++;
+    if (lastRingAdded >= ringCount) {
+        lastRingAdded = 0;
+    }
+    
+    Ring * r = &rings[lastRingAdded];
+    r->x = COLS / 2;
+    r->y = LINES / 2;
+    r->dist = 0;
+    r->activated = true;
 }
 
 void update() {
@@ -132,25 +184,50 @@ void update() {
         int idx = boardIndex(spiralX, spiralY);
         board[idx] = flipSpiral ? spiral2 : spiral;
     }
+    
+    ringCounter++;
+    if (ringCounter > ringSlowdown) {
+        ringCounter = 0;
+    
+        nextRingCounter++;
+        if (nextRingCounter > ringSpacing) {
+            addRing();
+            nextRingCounter = 0;
+        }
+        
+        for (int i = 0; i < ringCount; i++) {
+            Ring * r = &rings[i];
+            if (r->activated) {
+                r->dist++;
+                for (int i = 0; i < COLS; i++) {
+                    for (int j = 0; j < LINES; j++) {
+                        bool in = inRing(r, i, j);
+                        int idx = boardIndex(i, j);
+                        
+                        if (in) {
+                            board[idx] = ring;
+                        } else if (board[idx] == ring) {
+                            board[idx] = blank;
+                        }
+                    }
+                }
+            }
+        }
+    }
 }
 
-void colorBackground() {
-    backgroundColor++;
-    if (backgroundColor > 5) {
-        backgroundColor = 0;
+void updateBackgroundColor() {
+    colorCounter++;
+    if (colorCounter < colorSlowdown) {
+        return;
+    } else {
+        colorCounter = 0;
     }
     
-    attron(COLOR_PAIR(backgroundColor));
-}
-
-void setupColor() {
-    start_color();
-    init_pair(0, COLOR_WHITE, COLOR_GREEN);
-    init_pair(1, COLOR_WHITE, COLOR_CYAN);
-    init_pair(2, COLOR_WHITE, COLOR_RED);
-    init_pair(3, COLOR_WHITE, COLOR_BLUE);
-    init_pair(4, COLOR_WHITE, COLOR_YELLOW);
-    init_pair(5, COLOR_WHITE, COLOR_MAGENTA);
+    backgroundColor++;
+    if (backgroundColor > 5) {
+        backgroundColor = 1;
+    }
 }
 
 void drawScreen() {
@@ -159,6 +236,13 @@ void drawScreen() {
             int idx = boardIndex(i, j);
             int content = board[idx];
             char cToDraw = charForContent(content);
+            
+            if (content == ring) {
+                attron(COLOR_PAIR(4));
+            } else {
+                attron(COLOR_PAIR(backgroundColor));
+            }
+            
             mvaddch(j, i, cToDraw);
         }
     }
@@ -182,19 +266,29 @@ void setupBoard() {
     }
 }
 
+void setupColor() {
+    start_color();
+    init_pair(0, COLOR_WHITE, COLOR_GREEN);
+    init_pair(1, COLOR_BLACK, COLOR_CYAN);
+    init_pair(2, COLOR_WHITE, COLOR_RED);
+    init_pair(3, COLOR_WHITE, COLOR_BLUE);
+    init_pair(4, COLOR_BLACK, COLOR_YELLOW);
+    init_pair(5, COLOR_WHITE, COLOR_MAGENTA);
+}
+
 void runTrip() {
     timeout(TripTickRate);
     curs_set(0); // turn off cursor
     counter = 0;
     
     setupBoard();
-    startSpiral();
+//    startSpiral();
     setupColor();
     drawScreen();
     
     int ch;
     while ((ch = getch()) != 'q') {
-        colorBackground();
+        updateBackgroundColor();
         update();
         drawScreen();
     }
@@ -331,10 +425,8 @@ void runMenu() {
             execute();
             return;
         }
-        
         refresh();
     }
-    
     endwin();
 }
 
