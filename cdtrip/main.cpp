@@ -45,14 +45,14 @@ struct Ring rings[ringCount];
 int ringCounter = 0;
 const int ringSlowdown = 2;
 const int ringSpacing = 5;
-int ringFlashCounter = 0; // 0,1 ring shows for 1/2 slowdown, 2,3 ring shows for full slowdown
-const int ringFlashMax = 4;
-int nextRingCounter = 0;
 int lastRingAdded = -1;
+int nextRingCounter = 0;
 
 int backgroundColor = 1;
 int colorCounter = 0;
-const int colorSlowdown = 20;
+const int colorSlowdown = 30;
+int colorFlashCounter = 0; // 0,1 ring shows for 1/2 slowdown, 2,3 ring shows for full slowdown
+const int colorFlashMax = 4;
 
 /// TRIP
 
@@ -193,15 +193,9 @@ void update() {
     memcpy(boardWithRings, board, sizeof(int) * LINES * COLS);
 
     ringCounter++;
-    int slowdown = ringFlashCounter < ringFlashMax / 2 ? ringSlowdown / 2 : ringSlowdown;
-    if (ringCounter > slowdown) {
+    if (ringCounter > ringSlowdown) {
         ringCounter = 0;
     
-        ringFlashCounter++;
-        if (ringFlashCounter > ringFlashMax) {
-            ringFlashCounter = 0;
-        }
-        
         nextRingCounter++;
         if (nextRingCounter > ringSpacing) {
             addRing();
@@ -235,15 +229,21 @@ void update() {
 
 void updateBackgroundColor() {
     colorCounter++;
-    if (colorCounter < colorSlowdown) {
+    int slowdown = colorFlashCounter < colorFlashMax / 2 ? colorSlowdown / 2 : colorSlowdown;
+    if (colorCounter < slowdown) {
         return;
-    } else {
-        colorCounter = 0;
+    }
+    
+    colorCounter = 0;
+    
+    colorFlashCounter++;
+    if (colorFlashCounter >= colorFlashMax) {
+        colorFlashCounter = 0;
     }
     
     backgroundColor++;
-    if (backgroundColor > 4) {
-        backgroundColor = 0;
+    if (backgroundColor > 5) {
+        backgroundColor = 1;
     }
 }
 
@@ -255,7 +255,7 @@ void drawScreen() {
             char cToDraw = charForContent(content);
             
             if (content == ring) {
-                attron(COLOR_PAIR(5));
+                attron(COLOR_PAIR(6));
             } else {
                 attron(COLOR_PAIR(backgroundColor));
             }
@@ -287,12 +287,12 @@ void setupBoard() {
 
 void setupColor() {
     start_color();
-    init_pair(0, COLOR_WHITE, COLOR_GREEN);
     init_pair(1, COLOR_BLACK, COLOR_CYAN);
     init_pair(2, COLOR_WHITE, COLOR_RED);
     init_pair(3, COLOR_WHITE, COLOR_BLUE);
-    init_pair(4, COLOR_WHITE, COLOR_MAGENTA);
-    init_pair(5, COLOR_BLACK, COLOR_YELLOW);
+    init_pair(4, COLOR_BLACK, COLOR_GREEN);
+    init_pair(5, COLOR_WHITE, COLOR_MAGENTA);
+    init_pair(6, COLOR_BLACK, COLOR_YELLOW);
 }
 
 void runTrip() {
