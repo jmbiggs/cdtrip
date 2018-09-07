@@ -13,7 +13,8 @@
 bool IsTerminalAvailable = false; // Check this global variable before ncurses calls
 static const int BorderWidth = 6;
 static const int TickRate = 200;
-static const int TripTickRate = 10;
+static const int TopTripTickRate = 10;
+int tripTickRate;
 
 int counter = 0;
 char input1 = NULL;
@@ -71,11 +72,12 @@ char charForContent(int content) {
         }
             
         case ring: {
-//            return '0';
+            return ' ';
+//            return 'O';
         }
             
         case blank: {
-//            return '0' + backgroundColor;
+            return '#' + backgroundColor;
         }
             
         default: {
@@ -285,28 +287,18 @@ void setupBoard() {
     memcpy(boardWithRings, board, sizeof(int) * LINES * COLS);
 }
 
-void setupColor() {
-    start_color();
-    init_pair(1, COLOR_BLACK, COLOR_CYAN);
-    init_pair(2, COLOR_WHITE, COLOR_RED);
-    init_pair(3, COLOR_WHITE, COLOR_BLUE);
-    init_pair(4, COLOR_BLACK, COLOR_GREEN);
-    init_pair(5, COLOR_WHITE, COLOR_MAGENTA);
-    init_pair(6, COLOR_BLACK, COLOR_YELLOW);
-}
-
 void runTrip() {
-    timeout(TripTickRate);
+    tripTickRate = ((float)intensity / 10.0) * TopTripTickRate;
+    timeout(tripTickRate);
     curs_set(0); // turn off cursor
     counter = 0;
     
     setupBoard();
 //    startSpiral();
-    setupColor();
     drawScreen();
     
     int ch;
-    while ((ch = getch()) != 'q') {
+    while ((ch = getch()) != KEY_F(1) && ch != 'q') {
         updateBackgroundColor();
         update();
         drawScreen();
@@ -338,11 +330,14 @@ char charForCoord(int x, int y) {
     
     if ((y < BorderWidth) || (y >= LINES - BorderWidth)) {
         // cover top 2 and bottom 2
+        attron(COLOR_PAIR(7));
         return c;
     } else if ((x < BorderWidth) || (x >= COLS - BorderWidth)) {
         // just print the edges
+        attron(COLOR_PAIR(7));
         return c;
     } else {
+        attron(COLOR_PAIR(5));
         return ' ';
     }
 }
@@ -362,7 +357,7 @@ void updateBorder() {
 
 void printTitles() {
     char welcome[] = "Welcome to CD-TRIP"; // 18
-    char quit[] = "Press 'q' to quit"; // 18
+    char quit[] = "F1 to quit"; // 18
     char how[] = "How strong do you want your trip to be today?"; // 45
     char prompt[] = "Enter a number 1-10 (1=weakest, 10=strongest):";
     
@@ -378,6 +373,8 @@ void printTitles() {
     int qy = LINES - BorderWidth - 2;
     int qx = BorderWidth + 2;
 
+    attron(COLOR_PAIR(5));
+    
     attron(A_BOLD);
     mvaddstr(wy, wx, welcome);
     attroff(A_BOLD);
@@ -398,7 +395,7 @@ void execute() {
     if (input2) {
         intensity = 10;
     } else {
-        intensity = (int)input1;
+        intensity = (int)input1 - '0';
     }
     
     runTrip();
@@ -406,7 +403,7 @@ void execute() {
 
 void runMenu() {
     int ch;
-    while ((ch = getch()) != 'q') {
+    while ((ch = getch()) != KEY_F(1) && ch != 'q') {
         updateBorder();
         printTitles();
         
@@ -449,6 +446,17 @@ void runMenu() {
     endwin();
 }
 
+void setupColor() {
+    start_color();
+    init_pair(1, COLOR_BLACK, COLOR_CYAN);
+    init_pair(2, COLOR_WHITE, COLOR_RED);
+    init_pair(3, COLOR_WHITE, COLOR_BLUE);
+    init_pair(4, COLOR_BLACK, COLOR_GREEN);
+    init_pair(5, COLOR_WHITE, COLOR_MAGENTA);
+    init_pair(6, COLOR_BLUE, COLOR_YELLOW);
+    init_pair(7, COLOR_RED, COLOR_BLUE);
+}
+
 int main(int argc, char *argv[]) {
     
     for (int argi = 1; argi < argc; argi++)
@@ -466,6 +474,7 @@ int main(int argc, char *argv[]) {
     timeout(TickRate);
     noecho();
     
+    setupColor();
     runMenu();
 }
 
