@@ -10,6 +10,15 @@
 #include <cstdlib>
 #include <ncurses.h>
 
+#define PAIR_CYAN 1
+#define PAIR_RED 2
+#define PAIR_BLUE 3
+#define PAIR_GREEN 4
+#define PAIR_MAGENTA 5
+#define PAIR_YELLOW 6
+#define PAIR_REDONBLACK 7
+#define PAIR_CYANONBLUE 8
+
 bool IsTerminalAvailable = false; // Check this global variable before ncurses calls
 static const int BorderWidth = 6;
 static const int TickRate = 200;
@@ -244,7 +253,7 @@ void updateBackgroundColor() {
     }
     
     backgroundColor++;
-    if (backgroundColor > 5) {
+    if (backgroundColor >= PAIR_YELLOW) {
         backgroundColor = 1;
     }
 }
@@ -257,7 +266,7 @@ void drawScreen() {
             char cToDraw = charForContent(content);
             
             if (content == ring) {
-                attron(COLOR_PAIR(6));
+                attron(COLOR_PAIR(PAIR_YELLOW));
             } else {
                 attron(COLOR_PAIR(backgroundColor));
             }
@@ -330,14 +339,14 @@ char charForCoord(int x, int y) {
     
     if ((y < BorderWidth) || (y >= LINES - BorderWidth)) {
         // cover top 2 and bottom 2
-        attron(COLOR_PAIR(7));
+        attron(COLOR_PAIR(PAIR_REDONBLACK));
         return c;
     } else if ((x < BorderWidth) || (x >= COLS - BorderWidth)) {
         // just print the edges
-        attron(COLOR_PAIR(7));
+        attron(COLOR_PAIR(PAIR_REDONBLACK));
         return c;
     } else {
-        attron(COLOR_PAIR(5));
+        attron(COLOR_PAIR(PAIR_BLUE));
         return ' ';
     }
 }
@@ -373,12 +382,13 @@ void printTitles() {
     int qy = LINES - BorderWidth - 2;
     int qx = BorderWidth + 2;
 
-    attron(COLOR_PAIR(5));
-    
+    attron(COLOR_PAIR(PAIR_CYANONBLUE));
     attron(A_BOLD);
     mvaddstr(wy, wx, welcome);
+    attroff(COLOR_PAIR(PAIR_CYANONBLUE));
     attroff(A_BOLD);
     
+    attron(COLOR_PAIR(PAIR_BLUE));
     mvaddstr(qy, qx, quit);
     mvaddstr(hy, hx, how);
     mvaddstr(py, px, prompt);
@@ -448,13 +458,15 @@ void runMenu() {
 
 void setupColor() {
     start_color();
-    init_pair(1, COLOR_BLACK, COLOR_CYAN);
-    init_pair(2, COLOR_WHITE, COLOR_RED);
-    init_pair(3, COLOR_WHITE, COLOR_BLUE);
-    init_pair(4, COLOR_BLACK, COLOR_GREEN);
-    init_pair(5, COLOR_WHITE, COLOR_MAGENTA);
-    init_pair(6, COLOR_BLUE, COLOR_YELLOW);
-    init_pair(7, COLOR_RED, COLOR_BLUE);
+    
+    init_pair(PAIR_CYAN, COLOR_BLACK, COLOR_CYAN);
+    init_pair(PAIR_RED, COLOR_WHITE, COLOR_RED);
+    init_pair(PAIR_BLUE, COLOR_WHITE, COLOR_BLUE);
+    init_pair(PAIR_GREEN, COLOR_BLACK, COLOR_GREEN);
+    init_pair(PAIR_MAGENTA, COLOR_WHITE, COLOR_MAGENTA);
+    init_pair(PAIR_YELLOW, COLOR_BLUE, COLOR_YELLOW);
+    init_pair(PAIR_REDONBLACK, COLOR_YELLOW, COLOR_BLACK);
+    init_pair(PAIR_CYANONBLUE, COLOR_CYAN, COLOR_BLUE);
 }
 
 int main(int argc, char *argv[]) {
