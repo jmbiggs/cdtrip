@@ -45,6 +45,8 @@ struct Ring rings[ringCount];
 int ringCounter = 0;
 const int ringSlowdown = 2;
 const int ringSpacing = 5;
+int ringFlashCounter = 0; // 0,1 ring shows for 1/2 slowdown, 2,3 ring shows for full slowdown
+const int ringFlashMax = 4;
 int nextRingCounter = 0;
 int lastRingAdded = -1;
 
@@ -191,9 +193,15 @@ void update() {
     memcpy(boardWithRings, board, sizeof(int) * LINES * COLS);
 
     ringCounter++;
-    if (ringCounter > ringSlowdown) {
+    int slowdown = ringFlashCounter < ringFlashMax / 2 ? ringSlowdown / 2 : ringSlowdown;
+    if (ringCounter > slowdown) {
         ringCounter = 0;
     
+        ringFlashCounter++;
+        if (ringFlashCounter > ringFlashMax) {
+            ringFlashCounter = 0;
+        }
+        
         nextRingCounter++;
         if (nextRingCounter > ringSpacing) {
             addRing();
@@ -235,7 +243,7 @@ void updateBackgroundColor() {
     
     backgroundColor++;
     if (backgroundColor > 4) {
-        backgroundColor = 1;
+        backgroundColor = 0;
     }
 }
 
