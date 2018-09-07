@@ -6,6 +6,8 @@
 //
 
 #include <iostream>
+#include <cstring>
+#include <cstdlib>
 #include <ncurses.h>
 
 bool IsTerminalAvailable = false; // Check this global variable before ncurses calls
@@ -19,7 +21,7 @@ char input2 = NULL;
 
 int intensity;
 
-enum Direction { down, right, up, left };
+enum Direction { Dirdown, Dirright, Dirup, Dirleft };
 enum Content {
     blank = 0,
     spiral = 1,
@@ -27,6 +29,7 @@ enum Content {
     ring = 3,
 };
 int * board = NULL;
+int * boardWithRings = NULL;
 
 bool drawSpiral = false;
 int spiralX;
@@ -37,11 +40,11 @@ Direction spiralDir;
 struct Ring { int x; int y; int dist; bool activated; };
 const int ringWidth = 3;
 const int ringHeight = 2;
-const int ringCount = 6;
+const int ringCount = 10;
 struct Ring rings[ringCount];
 int ringCounter = 0;
-const int ringSlowdown = 10;
-const int ringSpacing = 6;
+const int ringSlowdown = 2;
+const int ringSpacing = 5;
 int nextRingCounter = 0;
 int lastRingAdded = -1;
 
@@ -136,9 +139,9 @@ void update() {
         }
 
         switch (spiralDir) {
-            case down: {
+            case Dirdown: {
                 if (charCollides(spiralX, spiralY + 1, spiralChar)) {
-                    spiralDir = right;
+                    spiralDir = Dirright;
                     update();
                     return;
                 } else {
@@ -146,9 +149,9 @@ void update() {
                 }
                 break;
             }
-            case right: {
+            case Dirright: {
                 if (charCollides(spiralX + 1, spiralY, spiralChar)) {
-                    spiralDir = up;
+                    spiralDir = Dirup;
                     update();
                     return;
                 } else {
@@ -156,9 +159,9 @@ void update() {
                 }
                 break;
             }
-            case up: {
+            case Dirup: {
                 if (charCollides(spiralX, spiralY - 1, spiralChar)) {
-                    spiralDir = left;
+                    spiralDir = Dirleft;
                     update();
                     return;
                 } else {
@@ -166,9 +169,9 @@ void update() {
                 }
                 break;
             }
-            case left: {
+            case Dirleft: {
                 if (charCollides(spiralX - 1, spiralY, spiralChar)) {
-                    spiralDir = down;
+                    spiralDir = Dirdown;
                     update();
                     return;
                 } else {
@@ -185,6 +188,8 @@ void update() {
         board[idx] = flipSpiral ? spiral2 : spiral;
     }
     
+    memcpy(boardWithRings, board, sizeof(int) * LINES * COLS);
+
     ringCounter++;
     if (ringCounter > ringSlowdown) {
         ringCounter = 0;
@@ -199,16 +204,20 @@ void update() {
             Ring * r = &rings[i];
             if (r->activated) {
                 r->dist++;
-                for (int i = 0; i < COLS; i++) {
-                    for (int j = 0; j < LINES; j++) {
-                        bool in = inRing(r, i, j);
-                        int idx = boardIndex(i, j);
-                        
-                        if (in) {
-                            board[idx] = ring;
-                        } else if (board[idx] == ring) {
-                            board[idx] = blank;
-                        }
+            }
+        }
+    }
+    
+    for (int i = 0; i < ringCount; i++) {
+        Ring * r = &rings[i];
+        if (r->activated) {
+            for (int i = 0; i < COLS; i++) {
+                for (int j = 0; j < LINES; j++) {
+                    bool in = inRing(r, i, j);
+                    int idx = boardIndex(i, j);
+                    
+                    if (in) {
+                        boardWithRings[idx] = ring;
                     }
                 }
             }
@@ -225,7 +234,7 @@ void updateBackgroundColor() {
     }
     
     backgroundColor++;
-    if (backgroundColor > 5) {
+    if (backgroundColor > 4) {
         backgroundColor = 1;
     }
 }
@@ -234,11 +243,11 @@ void drawScreen() {
     for (int i = 0; i < COLS; i++) {
         for (int j = 0; j < LINES; j++) {
             int idx = boardIndex(i, j);
-            int content = board[idx];
+            int content = boardWithRings[idx];
             char cToDraw = charForContent(content);
             
             if (content == ring) {
-                attron(COLOR_PAIR(4));
+                attron(COLOR_PAIR(5));
             } else {
                 attron(COLOR_PAIR(backgroundColor));
             }
@@ -253,7 +262,7 @@ void startSpiral() {
     drawSpiral = true;
     spiralX = 0;
     spiralY = -1;
-    spiralDir = down;
+    spiralDir = Dirdown;
 }
 
 void setupBoard() {
@@ -264,6 +273,8 @@ void setupBoard() {
             board[idx] = 0;
         }
     }
+    boardWithRings = (int*)malloc(sizeof(int) * LINES * COLS);    
+    memcpy(boardWithRings, board, sizeof(int) * LINES * COLS);
 }
 
 void setupColor() {
@@ -272,8 +283,8 @@ void setupColor() {
     init_pair(1, COLOR_BLACK, COLOR_CYAN);
     init_pair(2, COLOR_WHITE, COLOR_RED);
     init_pair(3, COLOR_WHITE, COLOR_BLUE);
-    init_pair(4, COLOR_BLACK, COLOR_YELLOW);
-    init_pair(5, COLOR_WHITE, COLOR_MAGENTA);
+    init_pair(4, COLOR_WHITE, COLOR_MAGENTA);
+    init_pair(5, COLOR_BLACK, COLOR_YELLOW);
 }
 
 void runTrip() {
