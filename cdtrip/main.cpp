@@ -347,6 +347,24 @@ char charForCoord(int x, int y) {
         return c;
     } else {
         attron(COLOR_PAIR(PAIR_BLUE));
+
+        bool onTop = (y == BorderWidth);
+        bool onBottom = (y == LINES - BorderWidth - 1);
+        bool onLeft = (x == BorderWidth);
+        bool onRight = (x == COLS - BorderWidth - 1);
+        
+        if (onTop || onBottom) {
+            if (onLeft || onRight) {
+                return '*';
+            } else {
+                return '-';
+            }
+        }
+        
+        if (onLeft || onRight) {
+            return '|';
+        }
+        
         return ' ';
     }
 }
@@ -359,7 +377,9 @@ void updateBorder() {
     
     for (int i = 0; i < COLS; i++) {
         for (int j = 0; j < LINES; j++) {
+            attron(COLOR_PAIR(PAIR_REDONBLACK));
             mvaddch(j, i, charForCoord(i, j));
+            attroff(COLOR_PAIR(PAIR_REDONBLACK));
         }
     }
 }
@@ -470,7 +490,6 @@ void setupColor() {
 }
 
 int main(int argc, char *argv[]) {
-    
     for (int argi = 1; argi < argc; argi++)
     {
         if (strcmp(argv[argi], "--debug-in-terminal") == 0)
@@ -489,4 +508,3 @@ int main(int argc, char *argv[]) {
     setupColor();
     runMenu();
 }
-
