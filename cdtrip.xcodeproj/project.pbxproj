@@ -113,6 +113,7 @@
 			hasScannedForEncodings = 0;
 			knownRegions = (
 				en,
+				Base,
 			);
 			mainGroup = 4C3EF9932131F9FA00964303;
 			productRefGroup = 4C3EF99D2131F9FA00964303 /* Products */;
@@ -249,7 +250,7 @@
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				CODE_SIGN_STYLE = Automatic;
-				DEVELOPMENT_TEAM = 4W4DV6697B;
+				DEVELOPMENT_TEAM = HXH9MZBPRJ;
 				"OTHER_LDFLAGS[arch=*]" = "-lncurses";
 				PRODUCT_NAME = "$(TARGET_NAME)";
 			};
@@ -259,7 +260,7 @@
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				CODE_SIGN_STYLE = Automatic;
-				DEVELOPMENT_TEAM = 4W4DV6697B;
+				DEVELOPMENT_TEAM = HXH9MZBPRJ;
 				"OTHER_LDFLAGS[arch=*]" = "-lncurses";
 				PRODUCT_NAME = "$(TARGET_NAME)";
 			};
